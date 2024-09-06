@@ -59,14 +59,14 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
-    public function friends(): BelongsToMany
+    public function followings(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id');
+        return $this->belongsToMany(User::class, 'followings', 'user_id', 'following_id');
     }
 
-    public function friendOf(): BelongsToMany
+    public function followers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id');
+        return $this->belongsToMany(User::class, 'followings', 'following_id', 'user_id');
     }
 
     public function profile()

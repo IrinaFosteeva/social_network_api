@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\FriendController;
+use App\Http\Controllers\FollowingController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AuthController;
 
@@ -23,9 +23,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('profile', [ProfileController::class, 'show']);
     Route::post('profile', [ProfileController::class, 'store']);
     Route::put('profile', [ProfileController::class, 'update']);
-    Route::post('users/{userId}/friends', [FriendController::class, 'add']);
-    Route::delete('users/{userId}/friends', [FriendController::class, 'remove']);
-    Route::get('users/{userId}/friends', [FriendController::class, 'index']);
+    Route::post('users/{userId}/followings', [FollowingController::class, 'add']);
+    Route::delete('users/{userId}/followings', [FollowingController::class, 'remove']);
+    Route::get('followings', [FollowingController::class, 'index']);
+    Route::get('followers', [FollowingController::class, 'followers']);
     Route::post('messages', [MessageController::class, 'send']);
     Route::get('messages/{userId1}/{userId2}', [MessageController::class, 'index']);
 });

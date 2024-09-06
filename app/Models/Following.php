@@ -5,16 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Friend extends Model
+class Following extends Model
 {
     use HasFactory;
-    protected $table = 'friends';
+    protected $table = 'followings';
 
-    public $timestamps = false;
+    public $timestamps = true;
+
 
     protected $fillable = [
         'user_id',
-        'friend_id',
+        'following_id',
     ];
 
     public function user()
@@ -22,8 +23,8 @@ class Friend extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function friend()
+    public function following()
     {
-        return $this->belongsTo(User::class, 'friend_id');
+        return $this->belongsTo(User::class, 'following_id');
     }
 }
