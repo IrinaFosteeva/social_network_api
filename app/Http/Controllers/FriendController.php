@@ -13,9 +13,9 @@ class FriendController extends Controller
 
         $user = User::findOrFail($userId);
 
-        if (!User::find($friendId)) {
+        if (!User::findOrFail($friendId)) {
             return response()->json([
-                'message' => 'Friend '.(int)($friendId).' not found!',
+                'message' => 'User '.$friendId.' not found!',
             ], 404);
         }
 
@@ -25,11 +25,23 @@ class FriendController extends Controller
             ], 400);
         }
 
-        $user->friends()->attach($friendId);
-
-        return response()->json([
-            'message' => 'Friend added successfully!',
-        ]);
+        try {
+            $user->friends()->attach($friendId);
+            if ($user->friends->contains($friendId)) {
+                return response()->json([
+                    'message' => 'Friend added successfully!',
+                ]);
+            } else {
+                return response()->json([
+                    'message' => 'Failed to add friend. Please try again.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to add friend. Please try again.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function remove(Request $request, $userId)
@@ -37,19 +49,45 @@ class FriendController extends Controller
         $friendId = $request->input('friend_id');
 
         $user = User::findOrFail($userId);
-        $user->friends()->detach($friendId);
 
-        return response()->json([
-            'message' => 'Friend removed successfully!',
-        ]);
+        if (!User::find($friendId)) {
+            return response()->json([
+                'message' => 'User '.$friendId.' not found!',
+            ], 404);
+        }
+
+        if (!$user->friends->contains($friendId)) {
+            return response()->json([
+                'message' => 'Not friends!',
+            ], 400);
+        }
+
+        try {
+            $user->friends()->detach($friendId);
+            if (!$user->friends->contains($friendId)) {
+                return response()->json([
+                    'message' => 'Friend removed successfully!',
+                ]);
+            } else {
+                return response()->json([
+                    'message' => 'Failed to remove friend. Please try again.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to remove friend. Please try again.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     public function index($userId)
     {
         $user = User::findOrFail($userId);
         $friends = $user->friends;
 
-        return response()->json($friends);
+        return response()->json([$friends]);
     }
 }
 

@@ -33,7 +33,6 @@ class MessageController extends Controller
 
         try {
             $message = Message::create($validated);
-
             if (!$message) {
                 return response()->json([
                     'message' => 'Failed to create message.',
@@ -52,6 +51,12 @@ class MessageController extends Controller
 
     public function index($userId1, $userId2)
     {
+        if (!User::find($userId1) || !User::find($userId2)) {
+            return response()->json([
+                'message' => 'One or both users not found.',
+            ], 404);
+        }
+
         $messages = Message::where(function ($query) use ($userId1, $userId2) {
             $query->where('sender_id', $userId1)
                 ->where('receiver_id', $userId2);
@@ -59,6 +64,12 @@ class MessageController extends Controller
             $query->where('sender_id', $userId2)
                 ->where('receiver_id', $userId1);
         })->get();
+
+        if ($messages->isEmpty()) {
+            return response()->json([
+                'message' => 'No messages found between these users.',
+            ], 404);
+        }
 
         return response()->json($messages);
     }
