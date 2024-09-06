@@ -20,14 +20,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
-    Route::get('profile', [ProfileController::class, 'show']);
-    Route::post('profile', [ProfileController::class, 'store']);
     Route::put('profile', [ProfileController::class, 'update']);
     Route::post('users/{userId}/followings', [FollowingController::class, 'add']);
     Route::delete('users/{userId}/followings', [FollowingController::class, 'remove']);
-    Route::get('followings', [FollowingController::class, 'index']);
+    Route::get('followings', [FollowingController::class, 'followings']);
     Route::get('followers', [FollowingController::class, 'followers']);
     Route::post('messages', [MessageController::class, 'send']);
-    Route::get('messages/{userId1}/{userId2}', [MessageController::class, 'index']);
+    Route::get('messages/{userId}', [MessageController::class, 'conversation']);
+    Route::get('messages', [MessageController::class, 'index']);
 });
 

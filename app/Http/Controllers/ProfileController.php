@@ -3,16 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Profile;
 
 class ProfileController extends Controller
 {
-    public function show($userId)
+    public function update(Request $request)
     {
-        return User::with('profile')->findOrFail($userId)->profile;
-    }
-
-    public function update(Request $request, $userId)
-    {
+        $userId = Auth::id();
         $profile = Profile::where('user_id', $userId)->first();
 
         if (!$profile) {

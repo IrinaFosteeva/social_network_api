@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Serviсes\UserLogoutService;
+
 
 class AuthController extends Controller {
     public function register(Request $request) {
@@ -38,7 +39,7 @@ class AuthController extends Controller {
         $credentials = $request->only('email', 'password');
 
         if (!auth()->attempt($credentials)) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+            return response()->json(['message' => 'Unauthorized, the wrong data'], 401);
         }
 
         $user = auth()->user();
@@ -53,17 +54,12 @@ class AuthController extends Controller {
         return response()->json(['token' => $token]);
     }
 
-    public function logout() {
-        $user = Auth::user();
 
+    public function logout(UserLogoutService $logoutService)
+    {
         try {
-            $deletedTokens = $user->tokens()->delete();
-
-            if ($deletedTokens > 0) {
-                return response()->json(['message' => 'Logged out successfully']);
-            } else {
-                return response()->json(['message' => 'No tokens found to delete'], 404);
-            }
+            $logoutService->logout();
+            return response()->json(['message' => 'Logged out successfully']);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to log out. Please try again.',

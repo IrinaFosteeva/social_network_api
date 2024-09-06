@@ -15,6 +15,10 @@ class Message extends Model
         'content',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     /**
      * Получить отправителя сообщения.
      */

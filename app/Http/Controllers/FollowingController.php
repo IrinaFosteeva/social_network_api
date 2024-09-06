@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Following;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,6 +12,7 @@ class FollowingController extends Controller
     {
         User::findOrFail($followingId);
         $user = Auth::user();
+
         if ($user->id == $followingId) {
             return response()->json([
                 'message' => 'You cannot follow yourself!',
@@ -24,9 +26,12 @@ class FollowingController extends Controller
         }
 
         try {
-            $user->followings()->attach($followingId);
-            $user->load('followings');
-            if ($user->followings->contains($followingId)) {
+            $newFollow = Following::create([
+                'user_id' => $user->id,
+                'following_id' => $followingId,
+            ]);
+
+            if ($newFollow) {
                 return response()->json([
                     'message' => 'Followed successfully!',
                 ]);
@@ -45,27 +50,23 @@ class FollowingController extends Controller
 
     public function remove($unfollowingId)
     {
-        User::findOrFail($unfollowingId);
         $user = Auth::user();
 
-        if (!$user->followings->contains($unfollowingId)) {
+        $following = Following::where('user_id', $user->id)
+            ->where('following_id', $unfollowingId)
+            ->first();
+
+        if (!$following) {
             return response()->json([
                 'message' => 'Not followed!',
             ], 400);
         }
 
         try {
-            $user->followings()->detach($unfollowingId);
-            $user->load('followings');
-            if (!$user->followings->contains($unfollowingId)) {
-                return response()->json([
-                    'message' => 'Unfollowed successfully!',
-                ]);
-            } else {
-                return response()->json([
-                    'message' => 'Failed to unfollow. Please try again.',
-                ], 500);
-            }
+            $following->delete();
+            return response()->json([
+                'message' => 'Unfollowed successfully!',
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to unfollow. Please try again.',
@@ -74,7 +75,7 @@ class FollowingController extends Controller
         }
     }
 
-    public function index()
+    public function followings()
     {
         $user = Auth::user();
         if (!$user) {
