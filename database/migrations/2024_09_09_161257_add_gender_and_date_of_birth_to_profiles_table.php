@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('profiles', function (Blueprint $table) {
-            $table->id();
-            $table->text('bio')->nullable();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
+        Schema::table('profiles', function (Blueprint $table) {
+            $table->string('gender')->nullable()->after('bio');
+            $table->date('date_of_birth')->nullable()->after('gender');
         });
     }
 
@@ -24,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('profiles');
+        Schema::table('profiles', function (Blueprint $table) {
+            $table->dropColumn(['gender', 'date_of_birth']);
+        });
     }
 };

@@ -11,24 +11,21 @@ use App\Http\Controllers\RoleAssignmentController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
-Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('user', function (Request $request) {
-        return $request->user();
-    });
+    Route::post('logout', [AuthController::class, 'logout']);
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
     Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole']);
-    Route::put('profile', [ProfileController::class, 'update']);
-    Route::post('users/{userId}/followings', [FollowingController::class, 'add']);
-    Route::delete('users/{userId}/followings', [FollowingController::class, 'remove']);
-    Route::get('followings', [FollowingController::class, 'followings']);
-    Route::get('followers', [FollowingController::class, 'followers']);
-    Route::post('messages', [MessageController::class, 'send']);
+    Route::put('profile/{userId}', [ProfileController::class, 'update']);
+    Route::post('follow/{userId}', [FollowingController::class, 'add']);
+    Route::delete('follow/{userId}', [FollowingController::class, 'destroy']);
+    Route::get('followings/{userId}', [FollowingController::class, 'followings']);
+    Route::get('followers/{userId}', [FollowingController::class, 'followers']);
+    Route::post('messages/{userId}', [MessageController::class, 'send']);
     Route::get('messages/{userId}', [MessageController::class, 'conversation']);
-    Route::get('messages', [MessageController::class, 'index']);
+    Route::get('messages/{userId}/all', [MessageController::class, 'index']);
 });
 

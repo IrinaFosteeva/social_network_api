@@ -4,18 +4,33 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Serviсes\UserLogoutService;
+use App\Helpers\ApiResponseHelper;
+use Illuminate\Support\Facades\Log;
 
 
 class AuthController extends Controller {
     public function register(Request $request) {
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                'min:8',
+                'regex:/[a-zA-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*?&]/',
+            ],
+        ]);
+
+        DB::beginTransaction();
+
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'password' => 'required|string|min:6|confirmed',
-            ]);
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -24,48 +39,53 @@ class AuthController extends Controller {
 
             $user->profile()->create();
             $user->assignRole('user');
-            return response()->json(['user' => $user], 201);
+
+            DB::commit();
+            return ApiResponseHelper::created(['user' => $user], 'User registered successfully');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to create user or profile. Please try again.',
-                'details' => $e->getMessage(),
-            ], 500);
+            DB::rollBack();
+            Log::error('User registration failed: ' . $e->getMessage());
+            return ApiResponseHelper::serverError('Failed to create user or profile. Please try again.');
         }
     }
-
 
     public function login(Request $request) {
-        $credentials = $request->only('email', 'password');
-        $user = User::where('email', $credentials['email'])->first();
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+        try {
+            $user = User::where('email', $validated['email'])->first();
+            if (!$user || !Hash::check($validated['password'], $user->password)) {
+                Log::warning('Unauthorized login attempt', ['email' => $validated['email']]);
+                return ApiResponseHelper::unauthorized('Unauthorized, the wrong data');
+            }
 
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['message' => 'Unauthorized, the wrong data'], 401);
+            $user->tokens()->delete();
+            $token = $user->createToken('Personal Access Token')->plainTextToken;
+
+            return ApiResponseHelper::success(['token' => $token, 'user_id' => $user->id], 'Login successful');
+
+        } catch (\Exception $e) {
+            Log::error('Token creation failed', [
+                'error' => $e->getMessage(),
+                'credentials' => $validated,
+            ]);
+            return ApiResponseHelper::serverError('Error via token creation');
         }
-
-        $token = $user->createToken('Personal Access Token')->plainTextToken;
-
-        if (!$token) {
-            return response()->json([
-                'error' => 'Error via token creation',
-            ], 500);
-        }
-
-        return response()->json(['token' => $token]);
     }
 
 
-
-    public function logout(UserLogoutService $logoutService)
-    {
+    public function logout(UserLogoutService $logoutService) {
         try {
             $logoutService->logout();
-            return response()->json(['message' => 'Logged out successfully']);
+            return ApiResponseHelper::success([], 'Logged out successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to log out. Please try again.',
-                'details' => $e->getMessage(),
-            ], 500);
+            Log::error('Logout failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return ApiResponseHelper::serverError('Failed to log out. Please try again.');
         }
     }
 }
