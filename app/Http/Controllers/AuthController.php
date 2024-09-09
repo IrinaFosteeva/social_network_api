@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Serviсes\UserLogoutService;
+use Illuminate\Support\Facades\Auth;
 
 
 class AuthController extends Controller {
@@ -24,6 +25,7 @@ class AuthController extends Controller {
             ]);
 
             $user->profile()->create();
+            $user->assignRole('user');
             return response()->json(['user' => $user], 201);
 
         } catch (\Exception $e) {
@@ -38,11 +40,11 @@ class AuthController extends Controller {
     public function login(Request $request) {
         $credentials = $request->only('email', 'password');
 
-        if (!auth()->attempt($credentials)) {
+        if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Unauthorized, the wrong data'], 401);
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
         $token = $user->createToken('Personal Access Token')->plainTextToken;
 
         if (!$token) {

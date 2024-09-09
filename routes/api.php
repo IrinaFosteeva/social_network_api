@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
+    Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole']);
     Route::put('profile', [ProfileController::class, 'update']);
     Route::post('users/{userId}/followings', [FollowingController::class, 'add']);
     Route::delete('users/{userId}/followings', [FollowingController::class, 'remove']);
