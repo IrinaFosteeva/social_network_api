@@ -1,12 +1,9 @@
 <?php
 
-// app/Http/Controllers/RoleAssignmentController.php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Auth;
 
 class RoleAssignmentController extends Controller
