@@ -36,7 +36,7 @@ class UserController extends Controller {
 
     public function show($id) {
         $currentUser = Auth::user();
-        if (!$currentUser->hasRole('admin') && !$currentUser->hasRole('moderator') && $id != $currentUser->id) {
+        if ($currentUser->hasRole('user') && $id != $currentUser->id) {
             return ApiResponseHelper::forbidden('You do not have access to this information.');
         }
         try {
@@ -66,11 +66,6 @@ class UserController extends Controller {
             ],
         ]);
 
-        $currentUser = Auth::user();
-        if (!$currentUser->hasRole('admin') && ($currentUser->id != $id)) {
-            return ApiResponseHelper::forbidden('You do not have access to this information.');
-        }
-
         DB::beginTransaction();
         try {
             $user = User::findOrFail($id);
@@ -99,13 +94,8 @@ class UserController extends Controller {
         }
     }
 
-
-    public function destroy($id, UserLogoutService $logoutService) {
+    public function destroy($id) {
         $currentUser = Auth::user();
-        if (!$currentUser->hasRole('admin')) {
-            return ApiResponseHelper::forbidden('You do not have access.');
-        }
-
         if ($currentUser->id == $id) {
             return ApiResponseHelper::forbidden('Admin cannot delete their own account.');
         }

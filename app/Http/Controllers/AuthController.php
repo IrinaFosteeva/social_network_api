@@ -35,9 +35,12 @@ class AuthController extends Controller {
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'account_status_id' => 1,
             ]);
 
-            $user->profile()->create();
+            $user->profile()->create([
+                'nickname' => $validated['name']
+            ]);
             $user->assignRole('user');
 
             DB::commit();
@@ -62,10 +65,17 @@ class AuthController extends Controller {
                 return ApiResponseHelper::unauthorized('Unauthorized, the wrong data');
             }
 
+            if ($user->account_status_id !== AccountStatus::where('name', 'active')->value('id')) {
+                Log::warning('Inactive user login attempt', ['email' => $validated['email']]);
+                return ApiResponseHelper::forbidden('Your account is not active.');
+            }
+
             $user->tokens()->delete();
             $token = $user->createToken('Personal Access Token')->plainTextToken;
 
-            return ApiResponseHelper::success(['token' => $token, 'user_id' => $user->id], 'Login successful');
+            return ApiResponseHelper::success(['token' => $token,
+                'user_id' => $user->id,
+                'profile_id' => $user->profile()->id], 'Login successful');
 
         } catch (\Exception $e) {
             Log::error('Token creation failed', [
@@ -75,7 +85,6 @@ class AuthController extends Controller {
             return ApiResponseHelper::serverError('Error via token creation');
         }
     }
-
 
     public function logout(UserLogoutService $logoutService) {
         try {

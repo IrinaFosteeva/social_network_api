@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function accountStatus()
+    {
+        return $this->belongsTo(AccountStatus::class);
+    }
+
     public function receivedMessages(): HasMany
     {
         return $this->hasMany(Message::class, 'receiver_id');

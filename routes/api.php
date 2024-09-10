@@ -14,10 +14,10 @@ Route::post('login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
-    Route::get('users', [UserController::class, 'index']);
+    Route::get('users', [UserController::class, 'index'])->middleware('can:view_users');
     Route::get('users/{id}', [UserController::class, 'show']);
-    Route::put('users/{id}', [UserController::class, 'update']);
-    Route::delete('users/{id}', [UserController::class, 'destroy']);
+    Route::put('users/{id}', [UserController::class, 'update'])->middleware('can:edit_users');
+    Route::delete('users/{id}', [UserController::class, 'destroy'])->middleware('can:delete_users');
     Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole']);
     Route::put('profile/{userId}', [ProfileController::class, 'update']);
     Route::post('follow/{userId}', [FollowingController::class, 'add']);
