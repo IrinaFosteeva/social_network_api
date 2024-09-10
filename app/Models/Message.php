@@ -13,25 +13,12 @@ class Message extends Model
         'sender_id',
         'receiver_id',
         'content',
+        'chat_id',
+        'status',
     ];
 
-    protected $hidden = [
-        'id',
-    ];
-
-    /**
-     * Получить отправителя сообщения.
-     */
-    public function sender(): BelongsTo
+    public function sender()
     {
         return $this->belongsTo(User::class, 'sender_id');
-    }
-
-    /**
-     * Получить получателя сообщения.
-     */
-    public function receiver(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'receiver_id');
     }
 }

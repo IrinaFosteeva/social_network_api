@@ -18,11 +18,18 @@ class UserController extends Controller {
             if ($perPage <= 0) {
                 return ApiResponseHelper::badRequest('The per_page parameter must be a positive integer.');
             }
-            $users = User::with('profile')->paginate($perPage);
+            $users = User::with('profile', 'accountStatus')->paginate($perPage);
             if ($users->isEmpty()) {
                 return ApiResponseHelper::notFound('No users found.');
             }
-            return ApiResponseHelper::success($users, 'Users retrieved successfully.');
+
+            $transformedUsers = $users->through(function ($user) {
+                $user->status = $user->accountStatus ? $user->accountStatus->status : null;
+                unset($user->account_status_id);
+                return $user;
+            });
+
+            return ApiResponseHelper::success($transformedUsers, 'Users retrieved successfully.');
 
         } catch (\Exception $e) {
             Log::error('Failed to retrieve users', [
@@ -34,28 +41,26 @@ class UserController extends Controller {
         }
     }
 
-    public function show($id) {
-        $currentUser = Auth::user();
-        if ($currentUser->hasRole('user') && $id != $currentUser->id) {
-            return ApiResponseHelper::forbidden('You do not have access to this information.');
-        }
+    public function show($userId) {
         try {
-            $user = User::with('profile')->findOrFail($id);
+            $user = User::with('profile', 'accountStatus')->findOrFail($userId);
+            $user->status = $user->accountStatus ? $user->accountStatus->status : null;
+            unset($user->account_status_id);
             return ApiResponseHelper::success($user, 'User data retrieved successfully.');
 
         } catch (\Exception $e) {
             \Log::error('Failed to retrieve user data', [
                 'error' => $e->getMessage(),
-                'user_id' => $id
+                'user_id' => $userId
             ]);
             return ApiResponseHelper::serverError('An error occurred while retrieving user data.');
         }
     }
 
-    public function update(Request $request, $id) {
+    public function update(Request $request, $userId) {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $userId,
             'password' => [
                 'sometimes',
                 'string',
@@ -68,7 +73,7 @@ class UserController extends Controller {
 
         DB::beginTransaction();
         try {
-            $user = User::findOrFail($id);
+            $user = User::findOrFail($userId);
 
             $userData = [
                 'name' => $validated['name'] ?? $user->name,
@@ -88,21 +93,21 @@ class UserController extends Controller {
             DB::rollBack();
             \Log::error('Failed to update user data', [
                 'error' => $e->getMessage(),
-                'user_id' => $id,
+                'user_id' => $userId,
             ]);
             return ApiResponseHelper::serverError('An error occurred while updating user data.');
         }
     }
 
-    public function destroy($id) {
+    public function destroy($userId) {
         $currentUser = Auth::user();
-        if ($currentUser->id == $id) {
-            return ApiResponseHelper::forbidden('Admin cannot delete their own account.');
+        if ($currentUser->id == $userId) {
+            return ApiResponseHelper::forbidden('You cannot delete your own account.');
         }
 
         DB::beginTransaction();
         try {
-            $user = User::findOrFail($id);
+            $user = User::findOrFail($userId);
             $user->delete();
             DB::commit();
 
@@ -112,7 +117,7 @@ class UserController extends Controller {
             DB::rollBack();
             \Log::error('Failed to delete user', [
                 'error' => $e->getMessage(),
-                'user_id' => $id
+                'user_id' => $userId
             ]);
             return ApiResponseHelper::serverError('An error occurred while trying to delete the user.');
         }

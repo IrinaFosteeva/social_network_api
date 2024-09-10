@@ -2,81 +2,113 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ApiResponseHelper;
 use App\Models\Message;
-use Illuminate\Http\Request;
+use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class MessageController extends Controller {
-    public function send(Request $request) {
-        $request->headers->set('Accept', 'application/json');
-        $currentUserId = Auth::id();
-
+    public function send(Request $request, $userId) {
         $validated = $request->validate([
-            'receiver_id' => 'required|exists:users,id',
-            'content' => 'required|string',
+            'content' => 'required|string|max:1000',
         ]);
 
-        if (!(User::find($validated['receiver_id']))) {
-            return response()->json([
-                'message' => 'Receiver not found.',
-            ], 404);
-        }
-        $validated['sender_id'] = $currentUserId;
-
+        DB::beginTransaction();
         try {
-            $message = Message::create($validated);
-            return response()->json($message, 201);
+            $senderUser = Auth::user();
+            $receiverUser = User::findOrFail($userId);
+
+            $chatId = Message::where(function($query) use ($senderUser, $receiverUser) {
+                $query->where('sender_id', $senderUser->id)
+                    ->where('receiver_id', $receiverUser->id);
+            })->orWhere(function($query) use ($senderUser, $receiverUser) {
+                $query->where('sender_id', $receiverUser->id)
+                    ->where('receiver_id', $senderUser->id);
+            })->pluck('chat_id')->first();
+
+            if (is_null($chatId)) {
+                $chatId = min($senderUser->id, $receiverUser->id) . '-' . max($senderUser->id, $receiverUser->id);
+            }
+
+            $message = Message::create([
+                'sender_id' => $senderUser->id,
+                'receiver_id' => $receiverUser->id,
+                'content' => $validated['content'],
+                'chat_id' => $chatId,
+            ]);
+
+            DB::commit();
+            return ApiResponseHelper::created(['message' => $message], 'Message sent successfully');
+
         } catch (\Exception $e) {
-            \Log::error('Failed to create message', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'message' => 'An error occurred while creating the message.',
-                'error' => $e->getMessage()
-            ], 500);
+            DB::rollBack();
+            \Log::error('Failed to send a message', [
+                'error' => $e->getMessage(),
+            ]);
+            return ApiResponseHelper::serverError('An error occurred while sending a message.');
         }
     }
 
-    public function index() {
-        $currentUserId = Auth::id();
-        $messages = Message::where(function ($query) use ($currentUserId) {
-            $query->where('sender_id', $currentUserId)
-                ->orWhere('receiver_id', $currentUserId);
-        })->get();
 
-        if ($messages->isEmpty()) {
-            return response()->json([
-                'message' => 'No messages found.',
-            ], 404);
+    public function show($chatId) {
+        DB::beginTransaction();
+        try {
+            $senderUser = Auth::user();
+            $receiverUser = User::findOrFail($userId);
+
+            $chatId = Message::where(function($query) use ($senderUser, $receiverUser) {
+                $query->where('sender_id', $senderUser->id)
+                    ->where('receiver_id', $receiverUser->id);
+            })->orWhere(function($query) use ($senderUser, $receiverUser) {
+                $query->where('sender_id', $receiverUser->id)
+                    ->where('receiver_id', $senderUser->id);
+            })->pluck('chat_id')->first();
+
+            if (is_null($chatId)) {
+                $chatId = min($senderUser->id, $receiverUser->id) . '-' . max($senderUser->id, $receiverUser->id);
+            }
+
+            $message = Message::create([
+                'sender_id' => $senderUser->id,
+                'receiver_id' => $receiverUser->id,
+                'content' => $validated['content'],
+                'chat_id' => $chatId,
+            ]);
+
+            DB::commit();
+            return ApiResponseHelper::created(['message' => $message], 'Message sent successfully');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to send a message', [
+                'error' => $e->getMessage(),
+            ]);
+            return ApiResponseHelper::serverError('An error occurred while sending a message.');
         }
+    }
+
+    public function index($chatId) {
+        $chat = Chat::findOrFail($chatId);
+        $messages = $chat->messages()->with('sender')->get();
 
         return response()->json($messages);
     }
 
-    public function conversation($userId) {
-        $currentUserId = Auth::id();
+    public function destroy($chatId, $messageId) {
+        $chat = Chat::findOrFail($chatId);
+        $message = Message::where('chat_id', $chatId)->findOrFail($messageId);
 
-        if (!User::find($userId)) {
-            return response()->json([
-                'message' => 'User not found.',
-            ], 404);
+        // Проверяем, что текущий пользователь участник чата и автор сообщения
+        if (!$chat->users->contains(Auth::id()) || $message->sender_id != Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $messages = Message::where(function ($query) use ($userId, $currentUserId) {
-            $query->where('sender_id', $userId)
-                ->where('receiver_id', $currentUserId);
-        })->orWhere(function ($query) use ($userId, $currentUserId) {
-            $query->where('sender_id', $currentUserId)
-                ->where('receiver_id', $userId);
-        })->get();
-
-        if ($messages->isEmpty()) {
-            return response()->json([
-                'message' => 'No messages found between these users.',
-            ], 404);
-        }
-
-        return response()->json($messages);
+        $message->delete();
+        return response()->json(['message' => 'Message deleted successfully.'], 200);
     }
 }
 

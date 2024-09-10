@@ -12,8 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 
-class User extends Authenticatable
-{
+class User extends Authenticatable {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
@@ -25,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'account_status_id'
     ];
 
     /**
@@ -43,22 +43,15 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
+    protected function casts(): array {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    public function sentMessages(): HasMany
-    {
+    public function sentMessages() {
         return $this->hasMany(Message::class, 'sender_id');
-    }
-
-    public function accountStatus()
-    {
-        return $this->belongsTo(AccountStatus::class);
     }
 
     public function receivedMessages(): HasMany
@@ -66,18 +59,24 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
-    public function followings(): BelongsToMany
-    {
+
+    public function isActive() {
+        return $this->account_status_id === AccountStatus::where('status', 'active')->value('id');
+    }
+
+    public function accountStatus() {
+        return $this->belongsTo(AccountStatus::class);
+    }
+
+    public function followings(): BelongsToMany {
         return $this->belongsToMany(User::class, 'followings', 'user_id', 'following_id');
     }
 
-    public function followers(): BelongsToMany
-    {
+    public function followers(): BelongsToMany {
         return $this->belongsToMany(User::class, 'followings', 'following_id', 'user_id');
     }
 
-    public function profile()
-    {
+    public function profile() {
         return $this->hasOne(Profile::class);
     }
 

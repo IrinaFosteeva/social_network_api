@@ -65,7 +65,7 @@ class AuthController extends Controller {
                 return ApiResponseHelper::unauthorized('Unauthorized, the wrong data');
             }
 
-            if ($user->account_status_id !== AccountStatus::where('name', 'active')->value('id')) {
+            if (!$user->isActive()) {
                 Log::warning('Inactive user login attempt', ['email' => $validated['email']]);
                 return ApiResponseHelper::forbidden('Your account is not active.');
             }
@@ -75,7 +75,7 @@ class AuthController extends Controller {
 
             return ApiResponseHelper::success(['token' => $token,
                 'user_id' => $user->id,
-                'profile_id' => $user->profile()->id], 'Login successful');
+            ], 'Login successful');
 
         } catch (\Exception $e) {
             Log::error('Token creation failed', [

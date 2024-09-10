@@ -15,43 +15,50 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        Permission::create(['name' => 'view users']);
-        Permission::create(['name' => 'edit users']);
-        Permission::create(['name' => 'delete users']);
+        Permission::create(['name' => 'view_users']);
+        Permission::create(['name' => 'edit_users']);
+        Permission::create(['name' => 'delete_users']);
 
-        Permission::create(['name' => 'view profile']);
-        Permission::create(['name' => 'edit profile']);
+        Permission::create(['name' => 'view_profiles']);
+        Permission::create(['name' => 'edit_profiles']);
+        Permission::create(['name' => 'delete_profiles']);
 
-        Permission::create(['name' => 'view messages']);
-        Permission::create(['name' => 'send messages']);
-        Permission::create(['name' => 'delete messages']);
+        Permission::create(['name' => 'view_messages']);
+        Permission::create(['name' => 'send_messages']);
+        Permission::create(['name' => 'delete_messages']);
 
-        Permission::create(['name' => 'view followings']);
-        Permission::create(['name' => 'manage followings']);
+        Permission::create(['name' => 'view_followings']);
+        Permission::create(['name' => 'view_followers']);
+        Permission::create(['name' => 'manage_followings']);
+
+        Permission::create(['name' => 'assign_role']);
+
 
 
 
         $roleAdmin = Role::create(['name' => 'admin']);
         $roleAdmin->givePermissionTo([
-            'view users', 'edit users', 'delete users',
-            'view profile', 'edit profile',
-            'view messages', 'send messages', 'delete messages',
-            'view followings', 'manage followings',
+            'view_users', 'edit_users', 'delete_users',
+            'view_profiles', 'edit_profiles', 'delete_profiles',
+            'view_messages', 'send_messages', 'delete_messages',
+            'view_followings', 'view_followers', 'manage_followings',
+            'assign_role'
         ]);
 
         $roleModerator = Role::create(['name' => 'moderator']);
         $roleModerator->givePermissionTo([
-            'view users',
-            'view profile', 'edit profile',
-            'view messages', 'send messages', 'delete messages',
-            'view followings', 'manage followings',
+            'view_users',
+            'view_profiles', 'edit_profiles', 'delete_profiles',
+            'view_messages', 'send_messages', 'delete_messages',
+            'view_followings', 'view_followers', 'manage_followings',
             ]);
 
         $roleUser = Role::create(['name' => 'user']);
         $roleUser->givePermissionTo([
-            'view profile', 'edit profile',
-            'view messages', 'send messages',
-            'view followings', 'manage followings',
+            'view_users',
+            'view_profiles', 'edit_profiles', 'delete_profiles',
+            'view_messages', 'send_messages', 'delete_messages',
+            'view_followings', 'view_followers', 'manage_followings',
             ]);
     }
 }

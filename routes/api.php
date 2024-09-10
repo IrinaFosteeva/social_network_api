@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
@@ -12,20 +11,28 @@ use App\Http\Controllers\RoleAssignmentController;
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'checkActive'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
-    Route::get('users', [UserController::class, 'index'])->middleware('can:view_users');
-    Route::get('users/{id}', [UserController::class, 'show']);
-    Route::put('users/{id}', [UserController::class, 'update'])->middleware('can:edit_users');
-    Route::delete('users/{id}', [UserController::class, 'destroy'])->middleware('can:delete_users');
-    Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole']);
-    Route::put('profile/{userId}', [ProfileController::class, 'update']);
-    Route::post('follow/{userId}', [FollowingController::class, 'add']);
-    Route::delete('follow/{userId}', [FollowingController::class, 'destroy']);
-    Route::get('followings/{userId}', [FollowingController::class, 'followings']);
-    Route::get('followers/{userId}', [FollowingController::class, 'followers']);
-    Route::post('messages/{userId}', [MessageController::class, 'send']);
-    Route::get('messages/{userId}', [MessageController::class, 'conversation']);
-    Route::get('messages/{userId}/all', [MessageController::class, 'index']);
+    Route::get('users/all', [UserController::class, 'index'])->middleware('role:admin|moderator');
+    Route::get('users/{userId}', [UserController::class, 'show'])->middleware(['can:view_users', 'role.owner.check']);
+    Route::put('users/{userId}', [UserController::class, 'update'])->middleware(['can:edit_users']);
+    Route::delete('users/{userId}', [UserController::class, 'destroy'])->middleware('can:delete_users');
+    Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole'])->middleware('can:assign_role');
+    Route::put('profile/{userId}', [ProfileController::class, 'update'])->middleware(['can:edit_profiles','role.owner.check']);
+    Route::get('profile/all', [ProfileController::class, 'index'])->middleware('can:view_profiles');
+    Route::get('profile/{userId}', [ProfileController::class, 'show'])->middleware('can:view_profiles');
+    Route::put('profile/{userId}', [ProfileController::class, 'destroy'])->middleware(['can:delete_profiles', 'role.owner.check']);
+    Route::post('follow/{userId}', [FollowingController::class, 'add'])->middleware('can:manage_followings');
+    Route::delete('follow/{userId}', [FollowingController::class, 'destroy'])->middleware('can:manage_followings');
+    Route::get('followings/{userId}', [FollowingController::class, 'followings'])->middleware('can:view_followings');
+    Route::get('followers/{userId}', [FollowingController::class, 'followers'])->middleware('can:view_followers');
+
+
+    Route::post('messages/{userId}', [MessageController::class, 'send'])->middleware('can:send_messages');
+    Route::get('messages/{userId}', [MessageController::class, 'show'])->middleware('can:view_messages');
+    Route::get('messages', [MessageController::class, 'index'])->middleware('can:view_messages');
+    Route::delete('messages/chat/{chat_id}', [MessageController::class, 'destroyChat'])->middleware('can:delete_messages');
+    Route::delete('messages/{message_id}', [MessageController::class, 'destroyMessage'])->middleware('can:delete_messages');
+
 });
 

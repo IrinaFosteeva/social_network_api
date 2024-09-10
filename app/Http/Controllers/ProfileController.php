@@ -13,30 +13,30 @@ use AccountStatus;
 
 class ProfileController extends Controller
 {
-    public function update(Request $request)
+    public function update(Request $request, $userId)
     {
-        $userId = Auth::id();
-        $profile = Profile::where('user_id', $userId)->first();
-
-        if (!$profile) {
-            return response()->json([
-                'message' => 'Profile not found.',
-            ], 404);
-        }
-
         $validated = $request->validate([
             'bio' => 'sometimes|string|max:255',
+            'gender' => 'sometimes|string|in:male,female',
+            'date_of_birth' => 'sometimes|date|before:today',
         ]);
+        DB::beginTransaction();
+        try {
+            $profile = Profile::where('user_id', $userId)->first();
+            if ($profile->isEmpty()) {
+                return ApiResponseHelper::notFound('Profile found.');
+            }
+            $profile->update($validated);
+            DB::commit();
+            return ApiResponseHelper::success(null, 'Profile updated successfully.');
 
-        if ($profile->update($validated)) {
-            return response()->json([
-                'message' => 'Profile updated successfully!',
-                'profile' => $profile
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to delete profile', [
+                'error' => $e->getMessage(),
+                'user_id' => $userId
             ]);
-        } else {
-            return response()->json([
-                'message' => 'Failed to update profile.',
-            ], 500);
+            return ApiResponseHelper::serverError('An error occurred.');
         }
     }
 
@@ -62,15 +62,15 @@ class ProfileController extends Controller
         }
     }
 
-    public function show($id) {
+    public function show($userId) {
         try {
-            $profile = Profile::findOrFail($id);
+            $profile = Profile::findOrFail($userId);
             return ApiResponseHelper::success($profile, 'Profile data retrieved successfully.');
 
         } catch (\Exception $e) {
             \Log::error('Failed to retrieve profile data', [
                 'error' => $e->getMessage(),
-                'profile_id' => $id
+                'user_id' => $userId
             ]);
             return ApiResponseHelper::serverError('An error occurred while retrieving profile data.');
         }
@@ -108,5 +108,4 @@ class ProfileController extends Controller
             return ApiResponseHelper::serverError('An error occurred.');
         }
     }
-
 }

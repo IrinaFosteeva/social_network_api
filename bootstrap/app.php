@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\CheckUserIsActive;
+use App\Http\Middleware\UserRoleAndOwnership;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
+        $middleware->alias([
+            'checkActive' => CheckUserIsActive::class,
+            'role.owner.check' => UserRoleAndOwnership::class,
+        ]);
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
