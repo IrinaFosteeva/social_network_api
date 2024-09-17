@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -51,14 +49,8 @@ class User extends Authenticatable {
     }
 
     public function sentMessages() {
-        return $this->hasMany(Message::class, 'sender_id');
+        return $this->hasMany(Message::class, 'user_id');
     }
-
-    public function receivedMessages(): HasMany
-    {
-        return $this->hasMany(Message::class, 'receiver_id');
-    }
-
 
     public function isActive() {
         return $this->account_status_id === AccountStatus::where('status', 'active')->value('id');

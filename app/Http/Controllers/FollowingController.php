@@ -2,54 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ApiResponseHelper;
 use App\Models\Following;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
-class FollowingController extends Controller
-{
-    public function add($followingId)
-    {
+class FollowingController extends Controller {
+    public function add($followingId) {
         User::findOrFail($followingId);
         $user = Auth::user();
 
         if ($user->id == $followingId) {
-            return response()->json([
-                'message' => 'You cannot follow yourself!',
-            ], 400);
+            return ApiResponseHelper::serverError('You cannot follow yourself!');
         }
 
         if ($user->followings->contains($followingId)) {
-            return response()->json([
-                'message' => 'Already followed!',
-            ], 400);
+            return ApiResponseHelper::serverError('Already followed!');
         }
 
+        DB::beginTransaction();
+
         try {
-            $newFollow = Following::create([
+            Following::create([
                 'user_id' => $user->id,
                 'following_id' => $followingId,
             ]);
 
-            if ($newFollow) {
-                return response()->json([
-                    'message' => 'Followed successfully!',
-                ]);
-            } else {
-                return response()->json([
-                    'message' => 'Failed to follow. Please try again.',
-                ], 500);
-            }
+            DB::commit();
+            return ApiResponseHelper::success($followingId, 'Followed successfully!');
+
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to follow. Please try again.',
-                'details' => $e->getMessage(),
-            ], 500);
+            DB::rollBack();
+            \Log::error('Failed to update user data', [
+                'error' => $e->getMessage(),
+            ]);
+            return ApiResponseHelper::serverError('Failed to follow. Please try again.');
         }
     }
 
-    public function remove($unfollowingId)
-    {
+    public function destroy($unfollowingId) {
         $user = Auth::user();
 
         $following = Following::where('user_id', $user->id)
@@ -57,46 +49,43 @@ class FollowingController extends Controller
             ->first();
 
         if (!$following) {
-            return response()->json([
-                'message' => 'Not followed!',
-            ], 400);
+            return ApiResponseHelper::notFound('Not followed!');
         }
 
+        DB::beginTransaction();
         try {
             $following->delete();
-            return response()->json([
-                'message' => 'Unfollowed successfully!',
-            ]);
+            DB::commit();
+            return ApiResponseHelper::success($unfollowingId, 'Unfollowed successfully!');
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to unfollow. Please try again.',
-                'details' => $e->getMessage(),
-            ], 500);
+            DB::rollBack();
+            \Log::error('Failed to update user data', [
+                'error' => $e->getMessage(),
+            ]);
+            return ApiResponseHelper::serverError('Failed to unfollow. Please try again.');
         }
     }
 
-    public function followings()
-    {
-        $user = Auth::user();
+    public function followings($userId) {
+        $user = User::findOrFail($userId); //поиск сразу в таблице профиля по юзер ид
         if (!$user) {
-            return response()->json(['message' => 'User not authenticated.'], 401);
+            return ApiResponseHelper::serverError('User with id ='.$userId.' not found');
         }
 
-        $followings = $user->followings;
-        return response()->json($followings);
+        $followings = $user->followings()->with('profile')->get();
+        $profiles = $followings->pluck('profile');
+        return ApiResponseHelper::success($profiles, 'Ok');
     }
 
-    public function followers()
-    {
-        $user = Auth::user();
-
+    public function followers($userId) {
+        $user = User::findOrFail($userId);
         if (!$user) {
-            return response()->json(['message' => 'User not authenticated.'], 401);
+            return ApiResponseHelper::serverError('User with id ='.$userId.' not found');
         }
 
-        $followers = $user->followers;
-
-        return response()->json($followers);
+        $followings = $user->followers()->with('profile')->get();
+        $profiles = $followings->pluck('profile');
+        return ApiResponseHelper::success($profiles, 'Ok');
     }
 }
 
