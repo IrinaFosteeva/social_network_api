@@ -7,6 +7,7 @@ use App\Http\Controllers\FollowingController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleAssignmentController;
+use App\Http\Controllers\ChatController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -14,14 +15,14 @@ Route::post('login', [AuthController::class, 'login']);
 Route::middleware(['auth:sanctum', 'checkActive'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('users/all', [UserController::class, 'index'])->middleware('role:admin|moderator');
-    Route::get('users/{userId}', [UserController::class, 'show'])->middleware(['can:view_users', 'role.owner.check']);
+    Route::get('users/{userId}', [UserController::class, 'show'])->middleware(['can:view_users', 'roleOwnerCheck']);
     Route::put('users/{userId}', [UserController::class, 'update'])->middleware(['can:edit_users']);
     Route::delete('users/{userId}', [UserController::class, 'destroy'])->middleware('can:delete_users');
     Route::post('users/{userId}/assign-role', [RoleAssignmentController::class, 'assignRole'])->middleware('can:assign_role');
-    Route::put('profile/{userId}', [ProfileController::class, 'update'])->middleware(['can:edit_profiles','role.owner.check']);
-    Route::get('profile/all', [ProfileController::class, 'index'])->middleware('can:view_profiles');
-    Route::get('profile/{userId}', [ProfileController::class, 'show'])->middleware('can:view_profiles');
-    Route::put('profile/{userId}', [ProfileController::class, 'destroy'])->middleware(['can:delete_profiles', 'role.owner.check']);
+    Route::put('profiles/{userId}', [ProfileController::class, 'update'])->middleware(['can:edit_profiles','roleOwnerCheck']);
+    Route::get('profiles/all', [ProfileController::class, 'index'])->middleware('can:view_profiles');
+    Route::get('profiles/{userId}', [ProfileController::class, 'show'])->middleware('can:view_profiles');
+    Route::put('profiles/{userId}', [ProfileController::class, 'destroy'])->middleware(['can:delete_profiles', 'roleOwnerCheck']);
     Route::post('follow/{userId}', [FollowingController::class, 'add'])->middleware('can:manage_followings');
     Route::delete('follow/{userId}', [FollowingController::class, 'destroy'])->middleware('can:manage_followings');
     Route::get('followings/{userId}', [FollowingController::class, 'followings'])->middleware('can:view_followings');
@@ -39,7 +40,7 @@ Route::middleware(['auth:sanctum', 'checkActive'])->group(function () {
     ///TODO
 
 
-    Route::post('chats', [ChatController::class, 'create']);
+    Route::post('chats', [ChatController::class, 'create'])->middleware(['can:send_messages']);
     Route::get('chats/{userId}', [ChatController::class, 'show']);
     Route::delete('chats/{chatId}', [ChatController::class, 'destroy']);
 

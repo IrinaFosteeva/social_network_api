@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\CheckUserIsActive;
 use App\Http\Middleware\UserRoleAndOwnership;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'checkActive' => CheckUserIsActive::class,
-            'role.owner.check' => UserRoleAndOwnership::class,
+            'roleOwnerCheck' => UserRoleAndOwnership::class,
+            'role' => RoleMiddleware::class,
         ]);
     })
 

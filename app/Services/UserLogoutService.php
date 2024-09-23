@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Serviсes;
+namespace App\Services;
 
 use Illuminate\Support\Facades\Auth;
 
@@ -8,7 +8,6 @@ class UserLogoutService {
     public function logout()
     {
         $user = Auth::user();
-
         try {
             $user->tokens()->delete();
         } catch (\Exception $e) {
